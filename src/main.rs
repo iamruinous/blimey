@@ -14,10 +14,21 @@ struct Cli {
 }
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "aha", about = "aha client")]
 enum Aha {
-    GetRelease (GetReleaseOpts),
-    CreateRelease (CreateReleaseOpts),
+    #[structopt(name = "release")]
+    Release (ReleaseOpts),
+}
+
+#[derive(StructOpt, Debug)]
+struct ReleaseOpts{
+    #[structopt(subcommand)]
+    commands: Option<Release>,
+}
+
+#[derive(StructOpt, Debug)]
+enum Release {
+    Get (GetReleaseOpts),
+    Create (CreateReleaseOpts),
 }
 
 #[derive(StructOpt, Debug)]
@@ -36,7 +47,7 @@ struct CreateReleaseOpts{
 }
 
 #[derive(Deserialize, Serialize)]
-struct Release {
+struct ReleaseData {
     name: String
 }
 
@@ -48,24 +59,37 @@ async fn main() -> surf::Result<()> {
     let bearer_token = format!("Bearer {}", token);
     if let Some(subcommand) = args.commands{
         match subcommand {
-            Aha::GetRelease(cfg) => {
-                let product_id = cfg.product_id.unwrap();
-                let url_str = format!("https://{}.aha.io/api/v1/products/{}/releases", subdomain, product_id);
-                let mut res = surf::get(url_str).header("Authorization", bearer_token).await?;
-                println!("{}", res.body_string().await?);
-                assert_eq!(res.status(), http_types::StatusCode::Ok);
-            },
-            Aha::CreateRelease(cfg) => {
-                let product_id = cfg.product_id.unwrap();
-                let name = cfg.name.unwrap();
-                let url_str = format!("https://{}.aha.io/api/v1/products/{}/releases", subdomain, product_id);
-                let data = &Release{ name };
-                let mut res = surf::post(url_str).header("Authorization", bearer_token).body(surf::Body::from_json(data)?).await?;
-                println!("{}", res.body_string().await?);
-                assert_eq!(res.status(), http_types::StatusCode::Ok);
-            },
+            Aha::Release(cfg) => {
+                if let Some(releasecmd) = cfg.commands{
+                    match releasecmd {
+                        Release::Get(rcfg) => {
+                            println!("{:?}", rcfg);
+                        },
+                        Release::Create(rcfg) => {
+                            println!("{:?}", rcfg);
+                        },
+                    }
+
+                }
+            }
+                //Aha::GetRelease => {
+                //    let product_id = cfg.product_id.unwrap();
+                //    let url_str = format!("https://{}.aha.io/api/v1/products/{}/releases", subdomain, product_id);
+                //    let mut res = surf::get(url_str).header("Authorization", bearer_token).await?;
+                //    println!("{}", res.body_string().await?);
+                //    assert_eq!(res.status(), http_types::StatusCode::Ok);
+                //},
+                // Aha::CreateRelease(cfg) => {
+                //     let product_id = cfg.product_id.unwrap();
+                //     let name = cfg.name.unwrap();
+                //     let url_str = format!("https://{}.aha.io/api/v1/products/{}/releases", subdomain, product_id);
+                //     let data = &ReleaseData{ name };
+                //     let mut res = surf::post(url_str).header("Authorization", bearer_token).body(surf::Body::from_json(data)?).await?;
+                //     println!("{}", res.body_string().await?);
+                //     assert_eq!(res.status(), http_types::StatusCode::Ok);
+                // },
+            }
         }
+        Ok(()) 
     }
-    Ok(()) 
-}
 
