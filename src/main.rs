@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
+use aha_cli::aha::AhaRequest;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "global")]
@@ -31,12 +31,13 @@ struct ReleaseOpts{
 
 #[derive(StructOpt, Debug)]
 enum Release {
-    Get (GetReleaseOpts),
+    List (ListReleaseOpts),
     Create (CreateReleaseOpts),
+    Update (UpdateReleaseOpts),
 }
 
 #[derive(StructOpt, Debug)]
-struct GetReleaseOpts{
+struct ListReleaseOpts{
     #[structopt(short, long)]
     product_id: String,
 }
@@ -48,53 +49,41 @@ struct CreateReleaseOpts{
 
     #[structopt(short, long)]
     product_id: String,
-
-    #[structopt(short="r", long="rollup-release-id")]
-    parent_id: Option<String>
 }
 
-#[derive(Deserialize, Serialize)]
-struct CreateReleaseData {
-    release: CreateReleaseDataInner,
-}
-
-#[derive(Deserialize, Serialize)]
-struct CreateReleaseDataInner {
+#[derive(StructOpt, Debug)]
+struct UpdateReleaseOpts{
+    #[structopt(short, long)]
     name: String,
+
+    #[structopt(short, long)]
+    product_id: String,
+
+    #[structopt(short="u", long="rollup-release-id")]
     parent_id: Option<String>,
+
+    #[structopt(short="r", long="release-id")]
+    release_id: String,
 }
+
 
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
-    let subdomain = &args.subdomain;
-    let token = &args.token;
-    let bearer_token = format!("Bearer {}", token);
-    let url_base_str = format!("https://{}.aha.io", subdomain);
+    let aha_request = AhaRequest::new(args.token.clone(), args.subdomain.clone());
     if let Some(subcommand) = args.commands{
         match subcommand {
             Aha::Release(cfg) => {
                 if let Some(releasecmd) = cfg.commands{
                     match releasecmd {
-                        Release::Get(subcfg) => {
-                            let product_id = subcfg.product_id;
-                            let url_str = format!("{}/api/v1/products/{}/releases", url_base_str, product_id);
-                            let mut res = surf::get(url_str).header("Authorization", bearer_token).await?;
-                            println!("{}", res.body_string().await?);
-                            assert_eq!(res.status(), http_types::StatusCode::Ok);
+                        Release::List(subcfg) => {
+                            aha_request.list_releases_for_product(subcfg.product_id.clone()).await?;
                         },
                         Release::Create(subcfg) => {
-                            let product_id = subcfg.product_id;
-                            let parent_id = subcfg.parent_id;
-                            let name = subcfg.name;
-                            let url_str = format!("{}/api/v1/products/{}/releases", url_base_str, product_id);
-                            let data = &CreateReleaseData{ release: CreateReleaseDataInner { name, parent_id } };
-                            let mut res = surf::post(url_str)
-                                .header("Authorization", bearer_token)
-                                .body(surf::Body::from_json(data)?)
-                                .await?;
-                            println!("{}", res.body_string().await?);
-                            assert_eq!(res.status(), http_types::StatusCode::Ok);
+                            aha_request.create_release_for_product(subcfg.product_id.clone(), subcfg.name.clone()).await?;
+                        },
+                        Release::Update(subcfg) => {
+                            aha_request.update_release_for_product(subcfg.product_id.clone(), subcfg.name.clone(), subcfg.parent_id.clone()).await?;
                         },
                     }
 
