@@ -49,26 +49,28 @@ struct CreateReleaseOpts{
     #[structopt(short, long)]
     product_id: String,
 
-    #[structopt(short="r", long="rolling-release-id")]
-    parent_id: Option<u32>
+    #[structopt(short="r", long="rollup-release-id")]
+    parent_id: Option<String>
 }
 
 #[derive(Deserialize, Serialize)]
 struct CreateReleaseData {
+    release: CreateReleaseDataInner,
+}
+
+#[derive(Deserialize, Serialize)]
+struct CreateReleaseDataInner {
     name: String,
-    parent_id: Option<u32>,
+    parent_id: Option<String>,
 }
 
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
-    dbg!("{:?}", &args);
     let subdomain = &args.subdomain;
     let token = &args.token;
     let bearer_token = format!("Bearer {}", token);
-    dbg!("{}", &bearer_token);
     let url_base_str = format!("https://{}.aha.io", subdomain);
-    dbg!("{}", &url_base_str);
     if let Some(subcommand) = args.commands{
         match subcommand {
             Aha::Release(cfg) => {
@@ -86,8 +88,11 @@ async fn main() -> surf::Result<()> {
                             let parent_id = subcfg.parent_id;
                             let name = subcfg.name;
                             let url_str = format!("{}/api/v1/products/{}/releases", url_base_str, product_id);
-                            let data = &CreateReleaseData{ name, parent_id };
-                            let mut res = surf::post(url_str).header("Authorization", bearer_token).body(surf::Body::from_json(data)?).await?;
+                            let data = &CreateReleaseData{ release: CreateReleaseDataInner { name, parent_id } };
+                            let mut res = surf::post(url_str)
+                                .header("Authorization", bearer_token)
+                                .body(surf::Body::from_json(data)?)
+                                .await?;
                             println!("{}", res.body_string().await?);
                             assert_eq!(res.status(), http_types::StatusCode::Ok);
                         },
