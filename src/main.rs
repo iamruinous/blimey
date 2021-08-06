@@ -1,5 +1,5 @@
-use structopt::StructOpt;
 use aha_cli::aha::AhaRequest;
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "global")]
@@ -10,7 +10,7 @@ struct Cli {
     #[structopt(short, long)]
     token: String,
 
-    #[structopt(short, long, default_value="json")]
+    #[structopt(short, long, default_value = "json")]
     format: String,
 
     #[structopt(subcommand)]
@@ -20,9 +20,9 @@ struct Cli {
 #[derive(StructOpt, Debug)]
 enum Aha {
     #[structopt(name = "product")]
-    Product (ProductCli),
+    Product(ProductCli),
     #[structopt(name = "release")]
-    Release (ReleaseCli),
+    Release(ReleaseCli),
 }
 
 #[derive(StructOpt, Debug)]
@@ -39,18 +39,18 @@ struct ReleaseCli {
 
 #[derive(StructOpt, Debug)]
 enum Product {
-    List (ListProducts),
-    Get (GetProduct),
-    Create (CreateProduct),
+    List(ListProducts),
+    Get(GetProduct),
+    Create(CreateProduct),
     // Update (UpdateProduct),
 }
 
 #[derive(StructOpt, Debug)]
 enum Release {
-    List (ListReleases),
-    Get (GetRelease),
-    Create (CreateRelease),
-    Update (UpdateRelease),
+    List(ListReleases),
+    Get(GetRelease),
+    Create(CreateRelease),
+    Update(UpdateRelease),
 }
 
 #[derive(StructOpt, Debug)]
@@ -94,10 +94,10 @@ struct UpdateRelease {
     #[structopt(short, long)]
     product_id: String,
 
-    #[structopt(short="u", long="rollup-release-id")]
+    #[structopt(short = "u", long = "rollup-release-id")]
     parent_id: Option<String>,
 
-    #[structopt(short="r", long="release-id")]
+    #[structopt(short = "r", long = "release-id")]
     release_id: String,
 }
 
@@ -109,19 +109,18 @@ struct CreateProduct {
     #[structopt(short, long)]
     prefix: String,
 
-    #[structopt(short="w", long="workspace-line")]
+    #[structopt(short = "w", long = "workspace-line")]
     parent_id: Option<String>,
 
-    #[structopt(short="t", long, default_value="product_workspace")]
+    #[structopt(short = "t", long, default_value = "product_workspace")]
     workspace_type: String,
 }
-
 
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
     let aha_request = AhaRequest::new(args.token.clone(), args.subdomain.clone());
-    if let Some(subcommand) = args.commands{
+    if let Some(subcommand) = args.commands {
         match subcommand {
             Aha::Product(cfg) => {
                 if let Some(productcmd) = cfg.commands {
@@ -133,31 +132,50 @@ async fn main() -> surf::Result<()> {
                             aha_request.get_product(subcfg.product_id.clone()).await?;
                         }
                         Product::Create(subcfg) => {
-                            aha_request.create_product(subcfg.name.clone(), subcfg.prefix.clone(), subcfg.parent_id, subcfg.workspace_type.clone()).await?;
+                            aha_request
+                                .create_product(
+                                    subcfg.name.clone(),
+                                    subcfg.prefix.clone(),
+                                    subcfg.parent_id,
+                                    subcfg.workspace_type.clone(),
+                                )
+                                .await?;
                         }
                     }
                 }
-            },
+            }
             Aha::Release(cfg) => {
-                if let Some(releasecmd) = cfg.commands{
+                if let Some(releasecmd) = cfg.commands {
                     match releasecmd {
                         Release::List(subcfg) => {
-                            aha_request.list_releases_for_product(subcfg.product_id.clone()).await?;
-                        },
+                            aha_request
+                                .list_releases_for_product(subcfg.product_id.clone())
+                                .await?;
+                        }
                         Release::Get(subcfg) => {
                             aha_request.get_release(subcfg.release_id.clone()).await?;
-                        },
+                        }
                         Release::Create(subcfg) => {
-                            aha_request.create_release_for_product(subcfg.product_id.clone(), subcfg.name.clone()).await?;
-                        },
+                            aha_request
+                                .create_release_for_product(
+                                    subcfg.product_id.clone(),
+                                    subcfg.name.clone(),
+                                )
+                                .await?;
+                        }
                         Release::Update(subcfg) => {
-                            aha_request.update_release_for_product(subcfg.product_id.clone(), subcfg.name.clone(), subcfg.parent_id.clone()).await?;
-                        },
+                            aha_request
+                                .update_release_for_product(
+                                    subcfg.product_id.clone(),
+                                    subcfg.name.clone(),
+                                    subcfg.parent_id.clone(),
+                                )
+                                .await?;
+                        }
                     }
-
                 }
             }
         }
     }
-    Ok(()) 
+    Ok(())
 }
