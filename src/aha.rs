@@ -19,18 +19,15 @@ impl AhaRequest {
     }
 
     fn get(&self, url_str: String) -> surf::RequestBuilder {
-        let req = surf::get(url_str).header("Authorization", self.bearer_token.clone());
-        req
+        surf::get(url_str).header("Authorization", self.bearer_token.clone())
     }
 
     fn post(&self, url_str: String) -> surf::RequestBuilder {
-        let req = surf::post(url_str).header("Authorization", self.bearer_token.clone());
-        req
+        surf::post(url_str).header("Authorization", self.bearer_token.clone())
     }
 
     fn put(&self, url_str: String) -> surf::RequestBuilder {
-        let req = surf::put(url_str).header("Authorization", self.bearer_token.clone());
-        req
+        surf::put(url_str).header("Authorization", self.bearer_token.clone())
     }
 
     pub async fn list_products(&self, updated_since: Option<String>) -> surf::Result<()> {
