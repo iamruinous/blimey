@@ -49,6 +49,27 @@ impl AhaRequest {
         Ok(())
     }
 
+    pub async fn create_product(&self, name: String, prefix: String, parent_id: Option<String>, workspace_type: String) -> surf::Result<()> {
+        #[derive(Deserialize, Serialize)]
+        struct Product {
+            release: ProductData,
+        }
+
+        #[derive(Deserialize, Serialize)]
+        struct ProductData {
+            name: String,
+            prefix: String,
+            parent_id: Option<String>,
+            workspace_type: String,
+        }
+        let url_str = format!("{}/api/v1/products", self.url_base_str);
+        let data = &Product { release: ProductData { name, prefix, parent_id, workspace_type } };
+        let mut res = self.post(url_str).body(surf::Body::from_json(data)?).await?;
+        println!("{}", res.body_string().await?);
+        assert_eq!(res.status(), http_types::StatusCode::Ok);
+        Ok(())
+    }
+
     pub async fn get_release(&self, release_id: String) -> surf::Result<()> {
         let url_str = format!("{}/api/v1/releases/{}", self.url_base_str, release_id);
         let mut res = self.get(url_str).await?;
@@ -67,16 +88,16 @@ impl AhaRequest {
 
     pub async fn create_release_for_product(&self, product_id: String, name: String) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
-        struct CreateReleaseData {
-            release: CreateReleaseDataInner,
+        struct Release {
+            release: ReleaseData,
         }
 
         #[derive(Deserialize, Serialize)]
-        struct CreateReleaseDataInner {
+        struct ReleaseData {
             name: String,
         }
         let url_str = format!("{}/api/v1/products/{}/releases", self.url_base_str, product_id);
-        let data = &CreateReleaseData{ release: CreateReleaseDataInner { name } };
+        let data = &Release { release: ReleaseData { name } };
         let mut res = self.post(url_str).body(surf::Body::from_json(data)?).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);

@@ -41,7 +41,7 @@ struct ReleaseCli {
 enum Product {
     List (ListProducts),
     Get (GetProduct),
-    // Create (CreateProduct),
+    Create (CreateProduct),
     // Update (UpdateProduct),
 }
 
@@ -106,7 +106,13 @@ struct CreateProduct {
     #[structopt(short, long)]
     name: String,
 
-    #[structopt(short, long, default_value="product_workspace")]
+    #[structopt(short, long)]
+    prefix: String,
+
+    #[structopt(short="w", long="workspace-line")]
+    parent_id: Option<String>,
+
+    #[structopt(short="t", long, default_value="product_workspace")]
     workspace_type: String,
 }
 
@@ -125,6 +131,9 @@ async fn main() -> surf::Result<()> {
                         }
                         Product::Get(subcfg) => {
                             aha_request.get_product(subcfg.product_id.clone()).await?;
+                        }
+                        Product::Create(subcfg) => {
+                            aha_request.create_product(subcfg.name.clone(), subcfg.prefix.clone(), subcfg.parent_id, subcfg.workspace_type.clone()).await?;
                         }
                     }
                 }
