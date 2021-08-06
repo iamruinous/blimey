@@ -9,11 +9,8 @@ pub struct AhaRequest {
 }
 
 impl AhaRequest {
-    pub fn new(
-        token: String,
-        subdomain: String,
-    ) -> AhaRequest {
-        AhaRequest {
+    pub fn new(token: String, subdomain: String) -> Self {
+        Self {
             token: token.clone(),
             subdomain: token.clone(),
             url_base_str: format!("https://{}.aha.io", subdomain),
@@ -21,9 +18,48 @@ impl AhaRequest {
         }
     }
 
+    fn get(&self, url_str: String) -> surf::RequestBuilder {
+        let req = surf::get(url_str).header("Authorization", self.bearer_token.clone());
+        req
+    }
+
+    fn post(&self, url_str: String) -> surf::RequestBuilder {
+        let req = surf::post(url_str).header("Authorization", self.bearer_token.clone());
+        req
+    }
+
+    fn put(&self, url_str: String) -> surf::RequestBuilder {
+        let req = surf::put(url_str).header("Authorization", self.bearer_token.clone());
+        req 
+    }
+
+    pub async fn list_products(&self, updated_since: Option<String>) -> surf::Result<()> {
+        let url_str = format!("{}/api/v1/products?updated_since={}", self.url_base_str, updated_since.unwrap_or_default());
+        let mut res = self.get(url_str).await?;
+        println!("{}", res.body_string().await?);
+        assert_eq!(res.status(), http_types::StatusCode::Ok);
+        Ok(())
+    }
+
+    pub async fn get_product(&self, product_id: String) -> surf::Result<()> {
+        let url_str = format!("{}/api/v1/products/{}", self.url_base_str, product_id);
+        let mut res = self.get(url_str).await?;
+        println!("{}", res.body_string().await?);
+        assert_eq!(res.status(), http_types::StatusCode::Ok);
+        Ok(())
+    }
+
+    pub async fn get_release(&self, release_id: String) -> surf::Result<()> {
+        let url_str = format!("{}/api/v1/releases/{}", self.url_base_str, release_id);
+        let mut res = self.get(url_str).await?;
+        println!("{}", res.body_string().await?);
+        assert_eq!(res.status(), http_types::StatusCode::Ok);
+        Ok(())
+    }
+
     pub async fn list_releases_for_product(&self, product_id: String) -> surf::Result<()> {
         let url_str = format!("{}/api/v1/products/{}/releases", self.url_base_str, product_id);
-        let mut res = surf::get(url_str).header("Authorization", self.bearer_token.clone()).await?;
+        let mut res = self.get(url_str).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
@@ -41,10 +77,7 @@ impl AhaRequest {
         }
         let url_str = format!("{}/api/v1/products/{}/releases", self.url_base_str, product_id);
         let data = &CreateReleaseData{ release: CreateReleaseDataInner { name } };
-        let mut res = surf::post(url_str)
-            .header("Authorization", self.bearer_token.clone())
-            .body(surf::Body::from_json(data)?)
-            .await?;
+        let mut res = self.post(url_str).body(surf::Body::from_json(data)?).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
@@ -63,8 +96,7 @@ impl AhaRequest {
         }
         let url_str = format!("{}/api/v1/products/{}/releases", self.url_base_str, product_id);
         let data = &CreateReleaseData{ release: CreateReleaseDataInner { name, parent_id } };
-        let mut res = surf::post(url_str)
-            .header("Authorization", self.bearer_token.clone())
+        let mut res = self.put(url_str)
             .body(surf::Body::from_json(data)?)
             .await?;
         println!("{}", res.body_string().await?);
