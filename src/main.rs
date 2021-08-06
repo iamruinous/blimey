@@ -89,16 +89,16 @@ struct CreateRelease {
 #[derive(StructOpt, Debug)]
 struct UpdateRelease {
     #[structopt(short, long)]
-    name: String,
-
-    #[structopt(short, long)]
     product_id: String,
-
-    #[structopt(short = "u", long = "rollup-release-id")]
-    parent_id: Option<String>,
 
     #[structopt(short = "r", long = "release-id")]
     release_id: String,
+
+    #[structopt(short, long)]
+    name: String,
+
+    #[structopt(short = "u", long = "rollup-release-id")]
+    parent_id: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -167,6 +167,7 @@ async fn main() -> surf::Result<()> {
                             aha_request
                                 .update_release_for_product(
                                     subcfg.product_id.clone(),
+                                    subcfg.release_id.clone(),
                                     subcfg.name.clone(),
                                     subcfg.parent_id.clone(),
                                 )

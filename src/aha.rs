@@ -59,7 +59,7 @@ impl AhaRequest {
     ) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
         struct Product {
-            release: ProductData,
+            product: ProductData,
         }
 
         #[derive(Deserialize, Serialize)]
@@ -71,7 +71,7 @@ impl AhaRequest {
         }
         let url_str = format!("{}/api/v1/products", self.url_base_str);
         let data = &Product {
-            release: ProductData {
+            product: ProductData {
                 name,
                 prefix,
                 parent_id,
@@ -139,25 +139,26 @@ impl AhaRequest {
     pub async fn update_release_for_product(
         &self,
         product_id: String,
+        release_id: String,
         name: String,
         parent_id: Option<String>,
     ) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
-        struct CreateReleaseData {
-            release: CreateReleaseDataInner,
+        struct Release {
+            release: ReleaseData,
         }
 
         #[derive(Deserialize, Serialize)]
-        struct CreateReleaseDataInner {
+        struct ReleaseData {
             name: String,
             parent_id: Option<String>,
         }
         let url_str = format!(
-            "{}/api/v1/products/{}/releases",
-            self.url_base_str, product_id
+            "{}/api/v1/products/{}/releases/{}",
+            self.url_base_str, product_id, release_id
         );
-        let data = &CreateReleaseData {
-            release: CreateReleaseDataInner { name, parent_id },
+        let data = &Release {
+            release: ReleaseData { name, parent_id },
         };
         let mut res = self.put(url_str).body(surf::Body::from_json(data)?).await?;
         println!("{}", res.body_string().await?);
