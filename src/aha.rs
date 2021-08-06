@@ -4,47 +4,50 @@ use serde::{Deserialize, Serialize};
 pub struct AhaRequest {
     token: String,
     subdomain: String,
-    url_base_str: String,
-    bearer_token: String,
 }
 
 impl AhaRequest {
-    pub fn new(token: String, subdomain: String) -> Self {
+    pub fn new(token: &str, subdomain: &str) -> Self {
         Self {
-            token: token.clone(),
-            subdomain: token.clone(),
-            url_base_str: format!("https://{}.aha.io", subdomain),
-            bearer_token: format!("Bearer {}", token),
+            token: token.into(),
+            subdomain: subdomain.into(),
         }
     }
 
-    fn get(&self, url_str: String) -> surf::RequestBuilder {
-        surf::get(url_str).header("Authorization", self.bearer_token.clone())
+    fn build_url(&self, part: &str) -> String {
+        format!("https://{}.aha.io{}", self.subdomain, part)
     }
 
-    fn post(&self, url_str: String) -> surf::RequestBuilder {
-        surf::post(url_str).header("Authorization", self.bearer_token.clone())
+    fn add_headers(&self, res: surf::RequestBuilder) -> surf::RequestBuilder {
+        res.header("Authorization", format!("Bearer {}", self.token))
     }
 
-    fn put(&self, url_str: String) -> surf::RequestBuilder {
-        surf::put(url_str).header("Authorization", self.bearer_token.clone())
+    fn get(&self, part: &str) -> surf::RequestBuilder {
+        self.add_headers(surf::get(self.build_url(part)))
+    }
+
+    fn post(&self, part: &str) -> surf::RequestBuilder {
+        self.add_headers(surf::post(self.build_url(part)))
+    }
+
+    fn put(&self, part: &str) -> surf::RequestBuilder {
+        self.add_headers(surf::put(self.build_url(part)))
     }
 
     pub async fn list_products(&self, updated_since: Option<String>) -> surf::Result<()> {
         let url_str = format!(
-            "{}/api/v1/products?updated_since={}",
-            self.url_base_str,
+            "/api/v1/products?updated_since={}",
             updated_since.unwrap_or_default()
         );
-        let mut res = self.get(url_str).await?;
+        let mut res = self.get(&url_str).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
     }
 
-    pub async fn get_product(&self, product_id: String) -> surf::Result<()> {
-        let url_str = format!("{}/api/v1/products/{}", self.url_base_str, product_id);
-        let mut res = self.get(url_str).await?;
+    pub async fn get_product(&self, product_id: &str) -> surf::Result<()> {
+        let url_str = format!("/api/v1/products/{}", product_id);
+        let mut res = self.get(&url_str).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
@@ -52,10 +55,10 @@ impl AhaRequest {
 
     pub async fn create_product(
         &self,
-        name: String,
-        prefix: String,
+        name: &str,
+        prefix: &str,
         parent_id: Option<String>,
-        workspace_type: String,
+        workspace_type: &str,
     ) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
         struct Product {
@@ -69,17 +72,17 @@ impl AhaRequest {
             parent_id: Option<String>,
             workspace_type: String,
         }
-        let url_str = format!("{}/api/v1/products", self.url_base_str);
+        let url_str = "/api/v1/products";
         let data = &Product {
             product: ProductData {
-                name,
-                prefix,
+                name: name.into(),
+                prefix: prefix.into(),
                 parent_id,
-                workspace_type,
+                workspace_type: workspace_type.into(),
             },
         };
         let mut res = self
-            .post(url_str)
+            .post(&url_str)
             .body(surf::Body::from_json(data)?)
             .await?;
         println!("{}", res.body_string().await?);
@@ -87,20 +90,17 @@ impl AhaRequest {
         Ok(())
     }
 
-    pub async fn get_release(&self, release_id: String) -> surf::Result<()> {
-        let url_str = format!("{}/api/v1/releases/{}", self.url_base_str, release_id);
-        let mut res = self.get(url_str).await?;
+    pub async fn get_release(&self, release_id: &str) -> surf::Result<()> {
+        let url_str = format!("/api/v1/releases/{}", release_id);
+        let mut res = self.get(&url_str).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
     }
 
-    pub async fn list_releases_for_product(&self, product_id: String) -> surf::Result<()> {
-        let url_str = format!(
-            "{}/api/v1/products/{}/releases",
-            self.url_base_str, product_id
-        );
-        let mut res = self.get(url_str).await?;
+    pub async fn list_releases_for_product(&self, product_id: &str) -> surf::Result<()> {
+        let url_str = format!("/api/v1/products/{}/releases", product_id);
+        let mut res = self.get(&url_str).await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())
@@ -108,8 +108,8 @@ impl AhaRequest {
 
     pub async fn create_release_for_product(
         &self,
-        product_id: String,
-        name: String,
+        product_id: &str,
+        name: &str,
     ) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
         struct Release {
@@ -120,15 +120,12 @@ impl AhaRequest {
         struct ReleaseData {
             name: String,
         }
-        let url_str = format!(
-            "{}/api/v1/products/{}/releases",
-            self.url_base_str, product_id
-        );
+        let url_str = format!("/api/v1/products/{}/releases", product_id);
         let data = &Release {
-            release: ReleaseData { name },
+            release: ReleaseData { name: name.into() },
         };
         let mut res = self
-            .post(url_str)
+            .post(&url_str)
             .body(surf::Body::from_json(data)?)
             .await?;
         println!("{}", res.body_string().await?);
@@ -138,9 +135,9 @@ impl AhaRequest {
 
     pub async fn update_release_for_product(
         &self,
-        product_id: String,
-        release_id: String,
-        name: String,
+        product_id: &str,
+        release_id: &str,
+        name: &str,
         parent_id: Option<String>,
     ) -> surf::Result<()> {
         #[derive(Deserialize, Serialize)]
@@ -153,14 +150,17 @@ impl AhaRequest {
             name: String,
             parent_id: Option<String>,
         }
-        let url_str = format!(
-            "{}/api/v1/products/{}/releases/{}",
-            self.url_base_str, product_id, release_id
-        );
+        let url_str = format!("/api/v1/products/{}/releases/{}", product_id, release_id);
         let data = &Release {
-            release: ReleaseData { name, parent_id },
+            release: ReleaseData {
+                name: name.into(),
+                parent_id,
+            },
         };
-        let mut res = self.put(url_str).body(surf::Body::from_json(data)?).await?;
+        let mut res = self
+            .put(&url_str)
+            .body(surf::Body::from_json(data)?)
+            .await?;
         println!("{}", res.body_string().await?);
         assert_eq!(res.status(), http_types::StatusCode::Ok);
         Ok(())

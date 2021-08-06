@@ -119,7 +119,7 @@ struct CreateProduct {
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
-    let aha_request = AhaRequest::new(args.token.clone(), args.subdomain.clone());
+    let aha_request = AhaRequest::new(&args.token, &args.subdomain);
     if let Some(subcommand) = args.commands {
         match subcommand {
             Aha::Product(cfg) => {
@@ -129,15 +129,15 @@ async fn main() -> surf::Result<()> {
                             aha_request.list_products(subcfg.updated_since).await?;
                         }
                         Product::Get(subcfg) => {
-                            aha_request.get_product(subcfg.product_id.clone()).await?;
+                            aha_request.get_product(&subcfg.product_id).await?;
                         }
                         Product::Create(subcfg) => {
                             aha_request
                                 .create_product(
-                                    subcfg.name.clone(),
-                                    subcfg.prefix.clone(),
+                                    &subcfg.name,
+                                    &subcfg.prefix,
                                     subcfg.parent_id,
-                                    subcfg.workspace_type.clone(),
+                                    &subcfg.workspace_type,
                                 )
                                 .await?;
                         }
@@ -149,27 +149,24 @@ async fn main() -> surf::Result<()> {
                     match releasecmd {
                         Release::List(subcfg) => {
                             aha_request
-                                .list_releases_for_product(subcfg.product_id.clone())
+                                .list_releases_for_product(&subcfg.product_id)
                                 .await?;
                         }
                         Release::Get(subcfg) => {
-                            aha_request.get_release(subcfg.release_id.clone()).await?;
+                            aha_request.get_release(&subcfg.release_id).await?;
                         }
                         Release::Create(subcfg) => {
                             aha_request
-                                .create_release_for_product(
-                                    subcfg.product_id.clone(),
-                                    subcfg.name.clone(),
-                                )
+                                .create_release_for_product(&subcfg.product_id, &subcfg.name)
                                 .await?;
                         }
                         Release::Update(subcfg) => {
                             aha_request
                                 .update_release_for_product(
-                                    subcfg.product_id.clone(),
-                                    subcfg.release_id.clone(),
-                                    subcfg.name.clone(),
-                                    subcfg.parent_id.clone(),
+                                    &subcfg.product_id,
+                                    &subcfg.release_id,
+                                    &subcfg.name,
+                                    subcfg.parent_id,
                                 )
                                 .await?;
                         }
