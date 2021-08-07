@@ -82,7 +82,7 @@ impl AhaRequest {
             },
         };
         let mut res = self
-            .post(&url_str)
+            .post(url_str)
             .body(surf::Body::from_json(data)?)
             .await?;
         println!("{}", res.body_string().await?);
