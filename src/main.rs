@@ -1,4 +1,4 @@
-use aha_cli::aha::AhaRequest;
+use blimey::aha::AhaRequest;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
