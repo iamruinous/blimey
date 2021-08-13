@@ -84,8 +84,8 @@ impl AhaRequest {
     pub fn update_product(
         &self,
         product_id: &str,
-        name: &str,
-        prefix: &str,
+        name: &Option<String>,
+        prefix: &Option<String>,
         parent_id: &Option<String>,
     ) -> surf::Result<surf::RequestBuilder> {
         #[derive(Deserialize, Serialize)]
@@ -95,15 +95,15 @@ impl AhaRequest {
 
         #[derive(Deserialize, Serialize)]
         struct ProductData {
-            name: String,
-            prefix: String,
+            name: Option<String>,
+            prefix: Option<String>,
             parent_id: Option<String>,
         }
         let url_str = format!("/api/v1/products/{}", product_id);
         let data = &Product {
             product: ProductData {
-                name: name.into(),
-                prefix: prefix.into(),
+                name: name.clone(),
+                prefix: prefix.clone(),
                 parent_id: parent_id.clone(),
             },
         };
@@ -148,7 +148,7 @@ impl AhaRequest {
         &self,
         product_id: &str,
         release_id: &str,
-        name: &str,
+        name: &Option<String>,
         parent_id: &Option<String>,
     ) -> surf::Result<surf::RequestBuilder> {
         #[derive(Deserialize, Serialize)]
@@ -158,13 +158,13 @@ impl AhaRequest {
 
         #[derive(Deserialize, Serialize)]
         struct ReleaseData {
-            name: String,
+            name: Option<String>,
             parent_id: Option<String>,
         }
         let url_str = format!("/api/v1/products/{}/releases/{}", product_id, release_id);
         let data = &Release {
             release: ReleaseData {
-                name: name.into(),
+                name: name.clone(),
                 parent_id: parent_id.clone(),
             },
         };
@@ -182,5 +182,26 @@ impl AhaRequest {
     pub fn get_feature(&self, feature_id: &str) -> surf::Result<surf::RequestBuilder> {
         let url_str = format!("/api/v1/features/{}", feature_id);
         Ok(self.get(&url_str))
+    }
+
+    pub fn update_feature(
+        &self,
+        feature_id: &str,
+        name: &Option<String>,
+    ) -> surf::Result<surf::RequestBuilder> {
+        #[derive(Deserialize, Serialize)]
+        struct Feature {
+            feature: FeatureData,
+        }
+
+        #[derive(Deserialize, Serialize)]
+        struct FeatureData {
+            name: Option<String>,
+        }
+        let url_str = format!("/api/v1/features/{}", feature_id);
+        let data = &Feature {
+            feature: FeatureData { name: name.clone() },
+        };
+        Ok(self.put(&url_str).body(surf::Body::from_json(data)?))
     }
 }

@@ -61,116 +61,91 @@ struct FeatureCli {
 
 #[derive(StructOpt, Debug)]
 enum Product {
-    List(ListProducts),
-    Get(GetProduct),
-    Create(CreateProduct),
-    Update(UpdateProduct),
+    List {
+        #[structopt(short, long)]
+        updated_since: Option<String>,
+    },
+    Get {
+        #[structopt(short, long)]
+        product_id: String,
+    },
+    Create {
+        #[structopt(short, long)]
+        name: String,
+
+        #[structopt(short = "s", long)]
+        prefix: String,
+
+        #[structopt(short = "w", long = "workspace-line")]
+        parent_id: Option<String>,
+
+        #[structopt(short = "t", long, default_value = "product_workspace")]
+        workspace_type: String,
+    },
+    Update {
+        #[structopt(short, long)]
+        product_id: String,
+
+        #[structopt(short, long)]
+        name: Option<String>,
+
+        #[structopt(short = "s", long)]
+        prefix: Option<String>,
+
+        #[structopt(short = "w", long = "workspace-line")]
+        parent_id: Option<String>,
+    },
 }
 
 #[derive(StructOpt, Debug)]
 enum Release {
-    List(ListReleases),
-    Get(GetRelease),
-    Create(CreateRelease),
-    Update(UpdateRelease),
+    List {
+        #[structopt(short, long)]
+        product_id: String,
+    },
+    Get {
+        #[structopt(short, long)]
+        release_id: String,
+    },
+    Create {
+        #[structopt(short, long)]
+        name: String,
+
+        #[structopt(short, long)]
+        product_id: String,
+    },
+    Update {
+        #[structopt(short, long)]
+        product_id: String,
+
+        #[structopt(short = "r", long = "release-id")]
+        release_id: String,
+
+        #[structopt(short, long)]
+        name: Option<String>,
+
+        #[structopt(short = "u", long = "rollup-release-id")]
+        parent_id: Option<String>,
+    },
 }
 
 #[derive(StructOpt, Debug)]
 enum Feature {
-    List(ListFeatures),
-    Get(GetFeature),
-    // Create(CreateFeature),
-    // Update (UpdateFeature),
-}
+    List {
+        #[structopt(short, long)]
+        product_id: String,
+    },
+    Get {
+        #[structopt(short, long)]
+        feature_id: String,
+    },
+    Update {
+        #[structopt(short, long)]
+        feature_id: String,
 
-#[derive(StructOpt, Debug)]
-struct ListProducts {
-    #[structopt(short, long)]
-    updated_since: Option<String>,
-}
-
-#[derive(StructOpt, Debug)]
-struct GetProduct {
-    #[structopt(short, long)]
-    product_id: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct ListReleases {
-    #[structopt(short, long)]
-    product_id: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct GetRelease {
-    #[structopt(short, long)]
-    release_id: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct CreateRelease {
-    #[structopt(short, long)]
-    name: String,
-
-    #[structopt(short, long)]
-    product_id: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct UpdateRelease {
-    #[structopt(short, long)]
-    product_id: String,
-
-    #[structopt(short = "r", long = "release-id")]
-    release_id: String,
-
-    #[structopt(short, long)]
-    name: String,
-
-    #[structopt(short = "u", long = "rollup-release-id")]
-    parent_id: Option<String>,
-}
-
-#[derive(StructOpt, Debug)]
-struct CreateProduct {
-    #[structopt(short, long)]
-    name: String,
-
-    #[structopt(short = "s", long)]
-    prefix: String,
-
-    #[structopt(short = "w", long = "workspace-line")]
-    parent_id: Option<String>,
-
-    #[structopt(short = "t", long, default_value = "product_workspace")]
-    workspace_type: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct UpdateProduct {
-    #[structopt(short, long)]
-    product_id: String,
-
-    #[structopt(short, long)]
-    name: String,
-
-    #[structopt(short = "s", long)]
-    prefix: String,
-
-    #[structopt(short = "w", long = "workspace-line")]
-    parent_id: Option<String>,
-}
-
-#[derive(StructOpt, Debug)]
-struct ListFeatures {
-    #[structopt(short, long)]
-    product_id: String,
-}
-
-#[derive(StructOpt, Debug)]
-struct GetFeature {
-    #[structopt(short, long)]
-    feature_id: String,
+        #[structopt(short, long)]
+        name: Option<String>,
+    },
 }
 
 #[async_std::main]
@@ -200,25 +175,30 @@ fn get_request(
             Aha::Product(cfg) => {
                 if let Some(productcmd) = &cfg.commands {
                     match productcmd {
-                        Product::List(subcfg) => {
-                            return aha_request.list_products(&subcfg.updated_since)
+                        Product::List { updated_since } => {
+                            return aha_request.list_products(updated_since)
                         }
-                        Product::Get(subcfg) => return aha_request.get_product(&subcfg.product_id),
-                        Product::Create(subcfg) => {
+                        Product::Get { product_id } => return aha_request.get_product(product_id),
+                        Product::Create {
+                            name,
+                            prefix,
+                            parent_id,
+                            workspace_type,
+                        } => {
                             return aha_request.create_product(
-                                &subcfg.name,
-                                &subcfg.prefix,
-                                &subcfg.parent_id,
-                                &subcfg.workspace_type,
+                                name,
+                                prefix,
+                                parent_id,
+                                workspace_type,
                             )
                         }
-                        Product::Update(subcfg) => {
-                            return aha_request.update_product(
-                                &subcfg.product_id,
-                                &subcfg.name,
-                                &subcfg.prefix,
-                                &subcfg.parent_id,
-                            )
+                        Product::Update {
+                            product_id,
+                            name,
+                            prefix,
+                            parent_id,
+                        } => {
+                            return aha_request.update_product(product_id, name, prefix, parent_id)
                         }
                     }
                 }
@@ -226,20 +206,21 @@ fn get_request(
             Aha::Release(cfg) => {
                 if let Some(releasecmd) = &cfg.commands {
                     match releasecmd {
-                        Release::List(subcfg) => {
-                            return aha_request.list_releases_for_product(&subcfg.product_id)
+                        Release::List { product_id } => {
+                            return aha_request.list_releases_for_product(product_id)
                         }
-                        Release::Get(subcfg) => return aha_request.get_release(&subcfg.release_id),
-                        Release::Create(subcfg) => {
-                            return aha_request
-                                .create_release_for_product(&subcfg.product_id, &subcfg.name)
+                        Release::Get { release_id } => return aha_request.get_release(release_id),
+                        Release::Create { product_id, name } => {
+                            return aha_request.create_release_for_product(product_id, name)
                         }
-                        Release::Update(subcfg) => {
+                        Release::Update {
+                            product_id,
+                            release_id,
+                            name,
+                            parent_id,
+                        } => {
                             return aha_request.update_release_for_product(
-                                &subcfg.product_id,
-                                &subcfg.release_id,
-                                &subcfg.name,
-                                &subcfg.parent_id,
+                                product_id, release_id, name, parent_id,
                             )
                         }
                     }
@@ -248,10 +229,13 @@ fn get_request(
             Aha::Feature(cfg) => {
                 if let Some(featurecmd) = &cfg.commands {
                     match featurecmd {
-                        Feature::List(subcfg) => {
-                            return aha_request.list_features_for_product(&subcfg.product_id)
+                        Feature::List { product_id } => {
+                            return aha_request.list_features_for_product(product_id)
                         }
-                        Feature::Get(subcfg) => return aha_request.get_feature(&subcfg.feature_id),
+                        Feature::Get { feature_id } => return aha_request.get_feature(feature_id),
+                        Feature::Update { feature_id, name } => {
+                            return aha_request.update_feature(feature_id, name)
+                        }
                     }
                 }
             }
