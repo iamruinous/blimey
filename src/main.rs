@@ -180,11 +180,8 @@ async fn main() -> surf::Result<()> {
         Ok(req) => {
             let mut res = req.await?;
             assert_eq!(res.status(), http_types::StatusCode::Ok);
-            match args.format.as_str() {
-                "json" => {
-                    println!("{}", res.body_string().await?);
-                }
-                _ => {}
+            if args.format == "json" {
+                println!("{}", res.body_string().await?);
             }
             Ok(())
         }
