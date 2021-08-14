@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct AhaRequest {
     token: String,
     subdomain: String,
+    base_url: String,
 }
 
 impl AhaRequest {
@@ -11,11 +12,20 @@ impl AhaRequest {
         Self {
             token: token.into(),
             subdomain: subdomain.into(),
+            base_url: format!("https://{}.aha.io", subdomain),
+        }
+    }
+
+    pub fn with_url(token: &str, subdomain: &str, base_url: &str) -> Self {
+        Self {
+            token: token.into(),
+            subdomain: subdomain.into(),
+            base_url: base_url.into(),
         }
     }
 
     fn build_url(&self, part: &str) -> String {
-        format!("https://{}.aha.io{}", self.subdomain, part)
+        format!("{}{}", self.base_url, part)
     }
 
     fn add_headers(&self, res: surf::RequestBuilder) -> surf::RequestBuilder {
@@ -34,20 +44,21 @@ impl AhaRequest {
         self.add_headers(surf::put(self.build_url(part)))
     }
 
-    pub fn list_products(
-        &self,
-        updated_since: &Option<String>,
-    ) -> surf::Result<surf::RequestBuilder> {
-        let url_str = format!(
-            "/api/v1/products?updated_since={}",
-            updated_since.clone().unwrap_or_default()
-        );
-        Ok(self.get(&url_str))
+    pub fn list_products(&self, updated_since: &Option<String>) -> surf::RequestBuilder {
+        let mut url_str = "/api/v1/products".to_string();
+        if updated_since.is_some() {
+            let part = format!(
+                "?updated_since={}",
+                updated_since.clone().unwrap_or_default()
+            );
+            url_str.push_str(&part);
+        }
+        self.get(&url_str)
     }
 
-    pub fn get_product(&self, product_id: &str) -> surf::Result<surf::RequestBuilder> {
+    pub fn get_product(&self, product_id: &str) -> surf::RequestBuilder {
         let url_str = format!("/api/v1/products/{}", product_id);
-        Ok(self.get(&url_str))
+        self.get(&url_str)
     }
 
     pub fn create_product(
@@ -56,7 +67,7 @@ impl AhaRequest {
         prefix: &str,
         parent_id: &Option<String>,
         workspace_type: &str,
-    ) -> surf::Result<surf::RequestBuilder> {
+    ) -> surf::RequestBuilder {
         #[derive(Deserialize, Serialize)]
         struct Product {
             product: ProductData,
@@ -79,7 +90,8 @@ impl AhaRequest {
                 workspace_type: workspace_type.into(),
             },
         };
-        Ok(self.post(url_str).body(surf::Body::from_json(data)?))
+        self.post(url_str)
+            .body(surf::Body::from_json(data).unwrap())
     }
 
     pub fn update_product(
@@ -88,7 +100,7 @@ impl AhaRequest {
         name: &Option<String>,
         prefix: &Option<String>,
         parent_id: &Option<String>,
-    ) -> surf::Result<surf::RequestBuilder> {
+    ) -> surf::RequestBuilder {
         #[derive(Deserialize, Serialize)]
         struct Product {
             product: ProductData,
@@ -111,27 +123,21 @@ impl AhaRequest {
                 parent_id: parent_id.clone(),
             },
         };
-        Ok(self.put(&url_str).body(surf::Body::from_json(data)?))
+        self.put(&url_str)
+            .body(surf::Body::from_json(data).unwrap())
     }
 
-    pub fn get_release(&self, release_id: &str) -> surf::Result<surf::RequestBuilder> {
+    pub fn get_release(&self, release_id: &str) -> surf::RequestBuilder {
         let url_str = format!("/api/v1/releases/{}", release_id);
-        Ok(self.get(&url_str))
+        self.get(&url_str)
     }
 
-    pub fn list_releases_for_product(
-        &self,
-        product_id: &str,
-    ) -> surf::Result<surf::RequestBuilder> {
+    pub fn list_releases_for_product(&self, product_id: &str) -> surf::RequestBuilder {
         let url_str = format!("/api/v1/products/{}/releases", product_id);
-        Ok(self.get(&url_str))
+        self.get(&url_str)
     }
 
-    pub fn create_release_for_product(
-        &self,
-        product_id: &str,
-        name: &str,
-    ) -> surf::Result<surf::RequestBuilder> {
+    pub fn create_release_for_product(&self, product_id: &str, name: &str) -> surf::RequestBuilder {
         #[derive(Deserialize, Serialize)]
         struct Release {
             release: ReleaseData,
@@ -145,7 +151,8 @@ impl AhaRequest {
         let data = &Release {
             release: ReleaseData { name: name.into() },
         };
-        Ok(self.post(&url_str).body(surf::Body::from_json(data)?))
+        self.post(&url_str)
+            .body(surf::Body::from_json(data).unwrap())
     }
 
     pub fn update_release_for_product(
@@ -154,7 +161,7 @@ impl AhaRequest {
         release_id: &str,
         name: &Option<String>,
         parent_id: &Option<String>,
-    ) -> surf::Result<surf::RequestBuilder> {
+    ) -> surf::RequestBuilder {
         #[derive(Deserialize, Serialize)]
         struct Release {
             release: ReleaseData,
@@ -174,20 +181,18 @@ impl AhaRequest {
                 parent_id: parent_id.clone(),
             },
         };
-        Ok(self.put(&url_str).body(surf::Body::from_json(data)?))
+        self.put(&url_str)
+            .body(surf::Body::from_json(data).unwrap())
     }
 
-    pub fn list_features_for_product(
-        &self,
-        product_id: &str,
-    ) -> surf::Result<surf::RequestBuilder> {
+    pub fn list_features_for_product(&self, product_id: &str) -> surf::RequestBuilder {
         let url_str = format!("/api/v1/products/{}/features", product_id);
-        Ok(self.get(&url_str))
+        self.get(&url_str)
     }
 
-    pub fn get_feature(&self, feature_id: &str) -> surf::Result<surf::RequestBuilder> {
+    pub fn get_feature(&self, feature_id: &str) -> surf::RequestBuilder {
         let url_str = format!("/api/v1/features/{}", feature_id);
-        Ok(self.get(&url_str))
+        self.get(&url_str)
     }
 
     pub fn update_feature(
@@ -196,7 +201,7 @@ impl AhaRequest {
         name: &Option<String>,
         start_date: &Option<String>,
         due_date: &Option<String>,
-    ) -> surf::Result<surf::RequestBuilder> {
+    ) -> surf::RequestBuilder {
         #[derive(Deserialize, Serialize)]
         struct Feature {
             feature: FeatureData,
@@ -219,6 +224,7 @@ impl AhaRequest {
                 due_date: due_date.clone(),
             },
         };
-        Ok(self.put(&url_str).body(surf::Body::from_json(data)?))
+        self.put(&url_str)
+            .body(surf::Body::from_json(data).unwrap())
     }
 }
