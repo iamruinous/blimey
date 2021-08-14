@@ -19,3 +19,4 @@ version = "1.0.0"
 
 [dev-dependencies]
 mockito = "0.23.3"
+serde_json = "1.0"

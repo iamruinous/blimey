@@ -45,10 +45,11 @@ impl AhaRequest {
     }
 
     pub fn list_products(&self, updated_since: &Option<String>) -> surf::RequestBuilder {
-        let url_str = format!(
-            "/api/v1/products?updated_since={}",
-            updated_since.clone().unwrap_or_default()
-        );
+        let mut url_str = "/api/v1/products".to_string();
+        if updated_since.is_some() {
+            let part = format!("?updated_since={}", updated_since.clone().unwrap_or_default());
+            url_str.push_str(&part);
+        }
         self.get(&url_str)
     }
 
