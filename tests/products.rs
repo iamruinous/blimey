@@ -48,7 +48,8 @@ async fn test_list_products_with_updated_since() -> Result<(), Box<dyn std::erro
 
     let uri = &mockito::server_url();
     let aha = AhaRequest::with_url(TEST_TOKEN, TEST_SUBDOMAIN, uri);
-    aha.list_products(&Some("2022-08-13T15:15:15Z".to_string())).await?;
+    aha.list_products(&Some("2022-08-13T15:15:15Z".to_string()))
+        .await?;
 
     m.assert();
     Ok(())
