@@ -177,24 +177,16 @@ enum Feature {
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
-    match get_request(&args.token, &args.subdomain, &args.subcommands) {
-        Ok(req) => {
-            let mut res = req.await?;
-            assert_eq!(res.status(), http_types::StatusCode::Ok);
-            if args.format == "json" {
-                println!("{}", res.body_string().await?);
-            }
-            Ok(())
-        }
-        Err(e) => Err(e),
+    let req = get_request(&args.token, &args.subdomain, &args.subcommands);
+    let mut res = req.await?;
+    assert_eq!(res.status(), http_types::StatusCode::Ok);
+    if args.format == "json" {
+        println!("{}", res.body_string().await?);
     }
+    Ok(())
 }
 
-fn get_request(
-    token: &str,
-    subdomain: &str,
-    subcommands: &Option<Aha>,
-) -> surf::Result<surf::RequestBuilder> {
+fn get_request(token: &str, subdomain: &str, subcommands: &Option<Aha>) -> surf::RequestBuilder {
     let aha_request = AhaRequest::new(token, subdomain);
     if let Some(scmd) = subcommands {
         match scmd {
@@ -273,8 +265,5 @@ fn get_request(
             }
         }
     }
-    Err(surf::Error::from_str(
-        surf::StatusCode::NotImplemented,
-        "Invalid command",
-    ))
+    surf::get("https://notfound")
 }
