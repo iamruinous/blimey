@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct AhaRequest {
     token: String,
     subdomain: String,
+    domain: String,
+    protocol: String,
 }
 
 impl AhaRequest {
@@ -11,11 +13,25 @@ impl AhaRequest {
         Self {
             token: token.into(),
             subdomain: subdomain.into(),
+            domain: "aha.io".to_string(),
+            protocol: "https".to_string(),
+        }
+    }
+
+    pub fn with_domain(token: &str, subdomain: &str, domain: &str, protocol: &str) -> Self {
+        Self {
+            token: token.into(),
+            subdomain: subdomain.into(),
+            domain: domain.into(),
+            protocol: protocol.into(),
         }
     }
 
     fn build_url(&self, part: &str) -> String {
-        format!("https://{}.aha.io{}", self.subdomain, part)
+        format!(
+            "{}://{}.{}{}",
+            self.protocol, self.subdomain, self.domain, part
+        )
     }
 
     fn add_headers(&self, res: surf::RequestBuilder) -> surf::RequestBuilder {

@@ -26,21 +26,18 @@ struct Cli {
 #[derive(StructOpt, Debug)]
 enum Aha {
     /// Create, get, list, and update aha.io products (workspaces)
-    #[structopt(name = "product")]
     Product {
         #[structopt(subcommand)]
         commands: Option<Product>,
     },
 
     /// Create, get, list, and update aha.io releases for a given product
-    #[structopt(name = "release")]
     Release {
         #[structopt(subcommand)]
         commands: Option<Release>,
     },
 
     /// Create, get, list, and update aha.io features
-    #[structopt(name = "feature")]
     Feature {
         #[structopt(subcommand)]
         commands: Option<Feature>,

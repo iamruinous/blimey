@@ -16,3 +16,6 @@ surf = "2.2.0"
 [dependencies.async-std]
 features = ["attributes"]
 version = "1.0.0"
+
+[dev-dependencies]
+mockito = "0.23.3"
