@@ -3,7 +3,7 @@ authors = ["Jade Meskill <jade.meskill@gmail.com>"]
 edition = "2018"
 license = "MIT"
 name = "blimey"
-version = "0.2.0"
+version = "0.3.0"
 publish = []
 
 [dependencies]

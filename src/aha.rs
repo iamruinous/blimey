@@ -66,6 +66,7 @@ impl AhaRequest {
         struct ProductData {
             name: String,
             prefix: String,
+            #[serde(skip_serializing_if = "Option::is_none")]
             parent_id: Option<String>,
             workspace_type: String,
         }
@@ -95,8 +96,11 @@ impl AhaRequest {
 
         #[derive(Deserialize, Serialize)]
         struct ProductData {
+            #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
             prefix: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
             parent_id: Option<String>,
         }
         let url_str = format!("/api/v1/products/{}", product_id);
@@ -158,7 +162,9 @@ impl AhaRequest {
 
         #[derive(Deserialize, Serialize)]
         struct ReleaseData {
+            #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
             parent_id: Option<String>,
         }
         let url_str = format!("/api/v1/products/{}/releases/{}", product_id, release_id);
@@ -188,6 +194,8 @@ impl AhaRequest {
         &self,
         feature_id: &str,
         name: &Option<String>,
+        start_date: &Option<String>,
+        due_date: &Option<String>,
     ) -> surf::Result<surf::RequestBuilder> {
         #[derive(Deserialize, Serialize)]
         struct Feature {
@@ -196,11 +204,20 @@ impl AhaRequest {
 
         #[derive(Deserialize, Serialize)]
         struct FeatureData {
+            #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            start_date: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            due_date: Option<String>,
         }
         let url_str = format!("/api/v1/features/{}", feature_id);
         let data = &Feature {
-            feature: FeatureData { name: name.clone() },
+            feature: FeatureData {
+                name: name.clone(),
+                start_date: start_date.clone(),
+                due_date: due_date.clone(),
+            },
         };
         Ok(self.put(&url_str).body(surf::Body::from_json(data)?))
     }

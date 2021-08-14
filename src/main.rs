@@ -7,91 +7,93 @@ use structopt::StructOpt;
 /// Use blimey to meet all your aha.io needs.
 #[structopt(name = "blimey", about = "A cli for aha.io", author)]
 struct Cli {
-    #[structopt(short, long, env = "AHA_CLI_SUBDOMAIN")]
+    /// This is your aha subdomain: <subdomain>.aha.io
+    #[structopt(short, long, env = "BLIMEY_AHA_SUBDOMAIN")]
     subdomain: String,
 
-    #[structopt(short, long, env = "AHA_CLI_TOKEN")]
+    /// Generate an API token from your aha.io account
+    #[structopt(short, long, env = "BLIMEY_AHA_TOKEN")]
     token: String,
 
-    #[structopt(short, long, default_value = "json", env = "AHA_CLI_FORMAT")]
+    /// Output format. JSON is the only supported option right now
+    #[structopt(short, long, default_value = "json", env = "BLIMEY_FORMAT")]
     format: String,
 
     #[structopt(subcommand)]
-    commands: Option<Aha>,
+    subcommands: Option<Aha>,
 }
 
 #[derive(StructOpt, Debug)]
 enum Aha {
-    #[structopt(
-        name = "product",
-        about = "create, get, list, and update aha.io products"
-    )]
-    Product(ProductCli),
+    /// Create, get, list, and update aha.io products (workspaces)
+    #[structopt(name = "product")]
+    Product {
+        #[structopt(subcommand)]
+        commands: Option<Product>,
+    },
 
-    #[structopt(
-        name = "release",
-        about = "create, get, list, and update aha.io releases"
-    )]
-    Release(ReleaseCli),
+    /// Create, get, list, and update aha.io releases for a given product
+    #[structopt(name = "release")]
+    Release {
+        #[structopt(subcommand)]
+        commands: Option<Release>,
+    },
 
-    #[structopt(
-        name = "feature",
-        about = "create, get, list, and update aha.io features"
-    )]
-    Feature(FeatureCli),
-}
-
-#[derive(StructOpt, Debug)]
-struct ProductCli {
-    #[structopt(subcommand)]
-    commands: Option<Product>,
-}
-
-#[derive(StructOpt, Debug)]
-struct ReleaseCli {
-    #[structopt(subcommand)]
-    commands: Option<Release>,
-}
-
-#[derive(StructOpt, Debug)]
-struct FeatureCli {
-    #[structopt(subcommand)]
-    commands: Option<Feature>,
+    /// Create, get, list, and update aha.io features
+    #[structopt(name = "feature")]
+    Feature {
+        #[structopt(subcommand)]
+        commands: Option<Feature>,
+    },
 }
 
 #[derive(StructOpt, Debug)]
 enum Product {
+    /// List all products for an account
     List {
+        /// Only return product/workspaces updated since this date
         #[structopt(short, long)]
         updated_since: Option<String>,
     },
+    /// Get a product by name or id
     Get {
+        /// Product name or id
         #[structopt(short, long)]
         product_id: String,
     },
+    /// Create a new product/workspace
     Create {
+        /// Product name
         #[structopt(short, long)]
         name: String,
 
+        /// Short product prefix
         #[structopt(short = "s", long)]
         prefix: String,
 
+        /// The workspace line this product should belong to (optional)
         #[structopt(short = "w", long = "workspace-line")]
         parent_id: Option<String>,
 
+        /// The workspace type: product_workspace, project_workspace, etc.
         #[structopt(short = "t", long, default_value = "product_workspace")]
         workspace_type: String,
     },
+    /// Update an existing product
     Update {
+        /// Product name or id
         #[structopt(short, long)]
         product_id: String,
 
+        /// Updated product name (optional)
         #[structopt(short, long)]
         name: Option<String>,
 
+        /// Short product prefix (optional)
         #[structopt(short = "s", long)]
         prefix: Option<String>,
 
+        /// The workspace line this product should belong to (optional)
         #[structopt(short = "w", long = "workspace-line")]
         parent_id: Option<String>,
     },
@@ -99,31 +101,43 @@ enum Product {
 
 #[derive(StructOpt, Debug)]
 enum Release {
+    /// List all releases for a given product
     List {
+        /// Product name or id
         #[structopt(short, long)]
         product_id: String,
     },
+    /// Get a release
     Get {
+        /// Release name or id
         #[structopt(short, long)]
         release_id: String,
     },
+    /// Create a new release for a given product
     Create {
+        /// Release name
         #[structopt(short, long)]
         name: String,
 
+        /// Product id this release belongs to
         #[structopt(short, long)]
         product_id: String,
     },
+    /// Update a release for a given product
     Update {
+        /// Product name or id
         #[structopt(short, long)]
         product_id: String,
 
+        /// Release name or id
         #[structopt(short = "r", long = "release-id")]
         release_id: String,
 
+        /// Updated release name (optional)
         #[structopt(short, long)]
         name: Option<String>,
 
+        /// The updated product this release should belong to (optional)
         #[structopt(short = "u", long = "rollup-release-id")]
         parent_id: Option<String>,
     },
@@ -131,27 +145,42 @@ enum Release {
 
 #[derive(StructOpt, Debug)]
 enum Feature {
+    /// List all features for a given product
     List {
+        /// Product name or id
         #[structopt(short, long)]
         product_id: String,
     },
+    /// Get a feature by name or id
     Get {
+        /// Feature name or id
         #[structopt(short, long)]
         feature_id: String,
     },
+    /// Update a feature
     Update {
+        /// Feature name or id
         #[structopt(short, long)]
         feature_id: String,
 
+        /// The updated feature name (optional)
         #[structopt(short, long)]
         name: Option<String>,
+
+        /// The updated start date, format: YYYY-MM-DD (optional)
+        #[structopt(short, long)]
+        start_date: Option<String>,
+
+        /// The updated due date, format: YYYY-MM-DD (optional)
+        #[structopt(short, long)]
+        due_date: Option<String>,
     },
 }
 
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args = Cli::from_args();
-    match get_request(&args.token, &args.subdomain, &args.commands) {
+    match get_request(&args.token, &args.subdomain, &args.subcommands) {
         Ok(req) => {
             let mut res = req.await?;
             assert_eq!(res.status(), http_types::StatusCode::Ok);
@@ -167,14 +196,14 @@ async fn main() -> surf::Result<()> {
 fn get_request(
     token: &str,
     subdomain: &str,
-    commands: &Option<Aha>,
+    subcommands: &Option<Aha>,
 ) -> surf::Result<surf::RequestBuilder> {
     let aha_request = AhaRequest::new(token, subdomain);
-    if let Some(subcommand) = commands {
-        match subcommand {
-            Aha::Product(cfg) => {
-                if let Some(productcmd) = &cfg.commands {
-                    match productcmd {
+    if let Some(scmd) = subcommands {
+        match scmd {
+            Aha::Product { commands } => {
+                if let Some(cmd) = commands {
+                    match cmd {
                         Product::List { updated_since } => {
                             return aha_request.list_products(updated_since)
                         }
@@ -203,8 +232,8 @@ fn get_request(
                     }
                 }
             }
-            Aha::Release(cfg) => {
-                if let Some(releasecmd) = &cfg.commands {
+            Aha::Release { commands } => {
+                if let Some(releasecmd) = commands {
                     match releasecmd {
                         Release::List { product_id } => {
                             return aha_request.list_releases_for_product(product_id)
@@ -226,15 +255,21 @@ fn get_request(
                     }
                 }
             }
-            Aha::Feature(cfg) => {
-                if let Some(featurecmd) = &cfg.commands {
+            Aha::Feature { commands } => {
+                if let Some(featurecmd) = commands {
                     match featurecmd {
                         Feature::List { product_id } => {
                             return aha_request.list_features_for_product(product_id)
                         }
                         Feature::Get { feature_id } => return aha_request.get_feature(feature_id),
-                        Feature::Update { feature_id, name } => {
-                            return aha_request.update_feature(feature_id, name)
+                        Feature::Update {
+                            feature_id,
+                            name,
+                            start_date,
+                            due_date,
+                        } => {
+                            return aha_request
+                                .update_feature(feature_id, name, start_date, due_date)
                         }
                     }
                 }
