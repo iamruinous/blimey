@@ -39,6 +39,22 @@ async fn test_list_releases_for_product() -> Result<(), Box<dyn std::error::Erro
 }
 
 #[async_std::test]
+async fn test_create_release_for_product() -> Result<(), Box<dyn std::error::Error>> {
+    let m = mock("POST", "/api/v1/products/PROD-1/releases")
+        .match_header("Authorization", BEARER_TOKEN)
+        .match_body(Matcher::Json(json!({"release":{"name":"newname"}})))
+        .with_status(204)
+        .create();
+
+    let uri = &mockito::server_url();
+    let aha = AhaRequest::with_url(TEST_TOKEN, TEST_SUBDOMAIN, uri);
+    aha.create_release_for_product("PROD-1", "newname").await?;
+
+    m.assert();
+    Ok(())
+}
+
+#[async_std::test]
 async fn test_update_release_for_product() -> Result<(), Box<dyn std::error::Error>> {
     let m = mock("PUT", "/api/v1/products/PROD-1/releases/REL-1")
         .match_header("Authorization", BEARER_TOKEN)
