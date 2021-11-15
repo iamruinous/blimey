@@ -38,6 +38,8 @@ jobs:
             os: ubuntu-latest
           - target: arm-unknown-linux-gnueabihf
             os: ubuntu-latest
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-latest
           - target: x86_64-apple-darwin
             os: macos-latest
           - target: aarch64-apple-darwin
@@ -57,7 +59,6 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.rust || 'stable' }}
-          target: ${{ matrix.target }}
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/upload-rust-binary-action@v1
