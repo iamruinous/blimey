@@ -12,6 +12,7 @@ http-types = "2.5.0"
 serde = "*"
 structopt = "0.3"
 surf = "2.2.0"
+openssl = { version = '0.10', features = ["vendored"] }
 
 [dependencies.async-std]
 features = ["attributes"]
